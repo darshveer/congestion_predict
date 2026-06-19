@@ -17,10 +17,17 @@ Thumbs.db
 # ---- Course material (not part of the solution) ----
 Slides/
 
+# ---- Secrets (never commit) ----
+.streamlit/secrets.toml
+.env
+
 # ---- Generated artifacts / logs (re-created by the scripts) ----
 experiment_log.txt
+streamlit_log.txt
 nohup.out
 *.log
+logs/
+models/
 results.json
 experiment_results.json
 

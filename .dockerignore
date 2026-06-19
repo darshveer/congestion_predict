@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.git/
+Slides/
+logs/
+models/
+*.log
+.DS_Store
+.streamlit/secrets.toml

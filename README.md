@@ -29,6 +29,79 @@ trivially recovers it. It is kept only as a "major-road importance" signal.
 
 ---
 
+## Interactive dashboard (UI)
+
+A **Streamlit** app (`app.py`) puts the whole system behind a map-driven interface:
+
+```bash
+pip install streamlit pydeck
+python build_app_data.py     # train models + bundle map data -> models/app_bundle.pkl
+streamlit run app.py         # opens http://localhost:8501
+```
+(The app auto-builds the bundle on first launch if it is missing.)
+
+Four pages:
+
+- **📊 Overview** — live metric cards (road-closure AUC, clearance error, hotspot skill,
+  survival concordance) read straight from `results.json`, plus the top forecast corridors.
+- **🗺️ Hotspot Map** — a pydeck map of Bengaluru with a **heatmap of where incidents
+  cluster**, red markers for past road closures, and 3-D **columns per corridor sized by
+  predicted event load** (taller/redder = busier). Filter by cause; hover for values.
+- **🎯 Score an Event** — pick a cause, corridor, vehicle, time and location → get the
+  **road-closure risk, expected clearance time, severity tier**, and a concrete
+  **deployment plan** (officers / barricades / diversion / tow), shown on a map with the
+  surrounding corridor hotspots.
+- **📈 Model & Analysis** — the full metrics table (held-out test set) and all analysis
+  figures.
+
+Every prediction made in the UI is written to the run log (see *Logging* below).
+
+## Deployment / hosting
+
+The running app is lightweight — it needs **only** `streamlit, pydeck, scikit-learn,
+pandas, numpy` (`requirements.txt`). The production models are sklearn
+`HistGradientBoosting`, so there is **no GPU, no OpenMP/system library, and no secrets**
+to configure (lightgbm/xgboost/lifelines in `requirements-dev.txt` are for offline
+training only). Memory footprint is < 1 GB; the model bundle (~1.6 MB) is trained from the
+committed CSV on first launch (`build_app_data.py`), so a fresh host is self-contained.
+
+**Option A — Streamlit Community Cloud (free, easiest, recommended for a demo)**
+1. Push this repo to GitHub.
+2. At <https://share.streamlit.io> → *New app* → pick the repo, branch, and `app.py`.
+3. In *Advanced settings* set **Python 3.12** (the repo's local 3.14 is newer than the
+   platform default). `requirements.txt` is picked up automatically.
+4. Deploy — you get a public `https://<app>.streamlit.app` URL.
+
+**Option B — Hugging Face Spaces (free)**
+Create a Space with the **Streamlit** SDK, push the repo (`app.py` + `requirements.txt`),
+and it builds and hosts automatically.
+
+**Option C — Docker → any cloud (production: custom domain, scaling)**
+A `Dockerfile` is included (pre-trains the bundle into the image for fast cold starts):
+```bash
+docker build -t astram-congestion .
+docker run -p 8501:8501 astram-congestion        # http://localhost:8501
+```
+Push that image to **Google Cloud Run, Render, Railway, Fly.io, AWS App Runner**, etc.
+The container respects the platform's `$PORT`. Cloud Run example:
+```bash
+gcloud run deploy astram-congestion --source . --region asia-south1 --allow-unauthenticated
+```
+
+(Self-hosting on your own Ubuntu box also works: `pip install -r requirements.txt &&
+streamlit run app.py --server.port 8501`, then reverse-proxy it behind nginx.)
+
+## Logging
+
+All runs log to `logs/` via `congestion/logging_utils.py`:
+
+- `logs/run_YYYYMMDD.log` — timestamped progress for every training / build / UI action.
+- `logs/metrics.jsonl` — **one JSON line per metric section per run**, so model quality is
+  auditable over time (not just the latest number).
+- `results.json` — the latest full metrics snapshot (consumed by the dashboard).
+
+---
+
 ## Data analysis (figures)
 
 ### When events happen
@@ -131,29 +204,45 @@ Final out-of-time road-closure AUC improved **0.787 → 0.812** from this proces
 
 ```
 congestion/
-  data.py        load + clean (timestamps, NULLs, cause normalisation, duration cleanup)
-  features.py    causal features + KDE intensity, weights matrix, group definitions
-  models.py      ImpactModel (closure/priority/duration) + HotspotModel (Poisson + spatial lag)
-  survival.py    Weibull AFT clearance-time model (handles censored / active events)
-  recommend.py   transparent manpower/barricade/diversion rule engine
-  evaluate.py    rolling-origin CV, seasonal-naïve baseline, Moran's I
-train.py         train + evaluate everything (live progress) -> results.json
-predict.py       score new incoming events -> deployment plan
-experiments.py   model-family / feature-group / hyperparameter search (-> experiment_results.json)
-ablation.py      the original per-target feature ablation
-visualize.py     regenerate all figures/  (13 PNGs)
-eda.py / eda2.py exploratory analysis
+  data.py          load + clean (timestamps, NULLs, cause normalisation, duration cleanup)
+  features.py      causal features + KDE intensity, weights matrix, group definitions
+  models.py        ImpactModel (closure/priority/duration) + HotspotModel (Poisson + spatial lag)
+  survival.py      Weibull AFT clearance-time model (handles censored / active events)
+  recommend.py     transparent manpower/barricade/diversion rule engine
+  evaluate.py      rolling-origin CV, seasonal-naïve baseline, Moran's I
+  logging_utils.py central logging -> logs/run_*.log + logs/metrics.jsonl
+app.py             Streamlit dashboard (map + event scorer + metrics + figures)
+build_app_data.py  train production models + bundle map data -> models/app_bundle.pkl
+train.py           train + evaluate everything (live progress + logging) -> results.json
+predict.py         score new incoming events -> deployment plan (CLI)
+experiments.py     model-family / feature-group / hyperparameter search (-> experiment_results.json)
+ablation.py        the original per-target feature ablation
+tune_severity.py   tunes the recommendation severity weights to recorded impact
+visualize.py       regenerate all figures/  (13 PNGs)
+eda.py / eda2.py   exploratory analysis
 ```
+
+**Severity tiers (Low/Moderate/High/Critical)** in the recommendation engine are not
+hand-waved: `tune_severity.py` chooses the score weights (closure 0.55 · expected
+duration 0.35 · disruptive-cause 0.10) so the tier *ranks events by their recorded impact*
+(real closures + clearance times on held-out data). Actual closure rate rises cleanly
+across tiers (≈1% → 7% → 19% → 35%); the earlier corridor-flag-driven score that labelled
+almost everything "High" was removed.
 
 ## Run
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
-pip install pandas numpy scikit-learn scipy matplotlib lightgbm xgboost lifelines
-python train.py        # full evaluation with live progress -> results.json
-python experiments.py  # model/feature/hyperparameter search -> experiment_results.json
-python visualize.py    # regenerate figures/
-python predict.py      # demo: score new events into deployment plans
+pip install pandas numpy scikit-learn scipy matplotlib lightgbm xgboost lifelines streamlit pydeck
+
+python train.py            # full evaluation -> results.json + logs/
+python build_app_data.py   # train + bundle for the UI -> models/app_bundle.pkl
+streamlit run app.py       # launch the dashboard at http://localhost:8501
+
+# extras
+python experiments.py      # model/feature/hyperparameter search -> experiment_results.json
+python visualize.py        # regenerate figures/
+python predict.py          # CLI: score example events into deployment plans
 ```
 (LightGBM/XGBoost need OpenMP: `brew install libomp` on macOS. The core pipeline runs on
 sklearn alone if you skip those.)

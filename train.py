@@ -17,14 +17,16 @@ from congestion import data as D
 from congestion import features as FE
 from congestion.models import ImpactModel, HotspotModel
 from congestion import recommend as R
+from congestion.logging_utils import get_logger, log_metrics, write_results
 
 warnings.filterwarnings("ignore", category=UserWarning)
 RESULTS = {}
 
+_LOG = get_logger("train")
 _T0 = time.time()
 def log(msg):
-    """Timestamped progress line so training is visible live in the terminal."""
-    print(f"\033[2m[{time.time()-_T0:5.1f}s]\033[0m {msg}", flush=True)
+    """Timestamped progress line so training is visible live in the terminal + log file."""
+    _LOG.info(f"[{time.time()-_T0:5.1f}s] {msg}")
 
 
 def time_split(df, frac=0.8):
@@ -57,6 +59,7 @@ def eval_classifier(name, y_tr, p_tr, y_te, p_te):
     print(f"  @thr={thr:.3f}: precision={m['precision']:.3f} recall={m['recall']:.3f} F1={m['f1']:.3f}")
     print(f"  confusion [tn fp / fn tp]: {cm.ravel().tolist()}")
     RESULTS[name] = {k: round(float(v), 4) for k, v in m.items()}
+    log_metrics(name, RESULTS[name], _LOG)  # -> logs/metrics.jsonl
     return m
 
 
@@ -99,6 +102,7 @@ def main():
                                    "median_ae_min": round(float(med_ae), 1),
                                    "naive_mae_min": round(float(base), 1),
                                    "n_test": int(m.sum())}
+            log_metrics("duration", RESULTS["duration"], _LOG)
 
     # ---- survival analysis for clearance time (uses censored / still-active events) ----
     log("fitting Weibull AFT survival model (censored-aware clearance time) ...")
@@ -118,6 +122,7 @@ def main():
         RESULTS["survival"] = {"aft_concordance": round(float(ci_te), 4),
                                "gbm_concordance": round(float(ci_gbm), 4),
                                "censored_train_events": int((1 - sf_tr['E']).sum())}
+        log_metrics("survival", RESULTS["survival"], _LOG)
     except Exception as e:
         print(f"\n[survival skipped: {e}]")
 
@@ -185,6 +190,7 @@ def main():
                           "cv_mae_std": round(float(np.std(cv)), 4),
                           "residual_morans_i": round(float(mi), 4),
                           "n_test_bins": int(len(fc_te))}
+    log_metrics("hotspot", RESULTS["hotspot"], _LOG)
 
     # top forecast hotspots in the test horizon (corridor x hour-of-week)
     fc_te = fc_te.assign(how=fc_te["dow"] * 24 + fc_te["hour"])
@@ -205,9 +211,11 @@ def main():
               f"~{sp.at[idx,'exp_duration_min']:.0f}min -> {recs.at[idx,'severity_tier']:<8} "
               f"{recs.at[idx,'rec_officers']}off/{recs.at[idx,'rec_barricades']}barr | {recs.at[idx,'rec_diversion'][:42]}")
 
-    with open("results.json", "w") as fh:
-        json.dump(RESULTS, fh, indent=2)
-    print("\nSaved metrics -> results.json")
+    RESULTS["_meta"] = {"n_events": int(len(df)), "n_train": int(len(tr)),
+                        "n_test": int(len(te)), "split_at": str(cut),
+                        "trained_at": pd.Timestamp.now().isoformat(timespec="seconds")}
+    write_results(RESULTS)
+    log(f"saved metrics snapshot -> results.json; appended rows -> logs/metrics.jsonl")
 
 
 if __name__ == "__main__":

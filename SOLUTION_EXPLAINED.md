@@ -121,7 +121,26 @@ neighbouring roads**.
 A transparent set of rules turns the three predictions into orders, e.g.:
 
 > *Public event on Hosur Road → 29% closure risk, "High" severity →*
-> **6 officers, 4 barricades, advisory diversion (warn drivers, suggest alternate route).**
+> **4 officers, 4 barricades, advisory diversion (warn drivers, suggest alternate route).**
+
+**How the severity tier is decided.** Each event gets a 0–1 severity score that blends the
+three signals that actually reflect impact:
+
+```
+severity = 0.55 × closure-probability   (the acute disruption: needs barricades/diversion)
+         + 0.35 × expected-clearance-time (resource-hours the event ties up)
+         + 0.10 × disruptive-cause flag   (gatherings, VIP, construction, accidents …)
+```
+→ **Low** < 0.10 · **Moderate** < 0.20 · **High** < 0.46 · **Critical** ≥ 0.46, with a guard
+that a near-certain closure is escalated on its own.
+
+I didn't *guess* those weights — I **tuned them** so the score best *ranks events by what
+actually happened* (real recorded road closures + clearance times on held-out data; see
+`tune_severity.py`). An earlier version mistakenly gave 30% weight to an administrative
+"is this on a major corridor?" flag, which pushed almost every event to "High". After the
+fix the tiers separate cleanly — the real closure rate rises **1% → 7% → 19% → 35%** from
+Low to Critical — and a routine breakdown on a busy corridor now correctly reads **Low**,
+not High.
 
 I deliberately kept this part **rule-based and readable** (not a black box) so officers
 can understand and override it — important for real-world trust.

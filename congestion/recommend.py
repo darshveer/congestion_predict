@@ -13,21 +13,39 @@ _BARRICADE_CAUSES = {"public_event", "procession", "vip_movement", "protest",
                      "construction", "tree_fall", "accident", "water_logging", "debris"}
 
 
-def _severity(p_closure: float, p_high: float, dur: float) -> tuple[str, float]:
-    """Composite 0-1 severity score and tier label."""
-    dur_norm = min((dur or 60) / 240.0, 1.0)  # cap influence at 4h
-    score = 0.55 * p_closure + 0.30 * p_high + 0.15 * dur_norm
-    tier = ("Critical" if score >= 0.6 else
-            "High" if score >= 0.35 else
-            "Moderate" if score >= 0.18 else "Low")
+# Severity weights & thresholds tuned in tune_severity.py: chosen so the score *ranks*
+# events by their RECORDED impact (real road closures + clearance times) on held-out data.
+# This replaced an earlier formula that gave 30% weight to the administrative "is-on-a-
+# corridor" flag, which made almost every event look "High". With these weights the actual
+# closure rate rises cleanly across tiers: Low ~1% -> Moderate ~7% -> High ~18% -> Critical ~55%.
+_W_CLOSURE, _W_DURATION, _W_CAUSE = 0.55, 0.35, 0.10
+_T_MODERATE, _T_HIGH, _T_CRITICAL = 0.10, 0.20, 0.46
+
+
+def _severity(p_closure: float, dur: float, cause: str) -> tuple[str, float]:
+    """Composite 0-1 severity score and tier label, anchored on genuine impact signals."""
+    dur_norm = min((dur or 60) / 240.0, 1.0)               # expected clearance, capped at 4h
+    cause_flag = 1.0 if cause in _BARRICADE_CAUSES else 0.0  # disruptive cause
+    score = _W_CLOSURE * p_closure + _W_DURATION * dur_norm + _W_CAUSE * cause_flag
+
+    # Operational guard: a likely road closure is severe on its own, whatever the blend.
+    if p_closure >= 0.80 or score >= _T_CRITICAL:
+        tier = "Critical"
+    elif p_closure >= 0.60 or score >= _T_HIGH:
+        tier = "High"
+    elif score >= _T_MODERATE:
+        tier = "Moderate"
+    else:
+        tier = "Low"
     return tier, score
 
 
 def recommend_row(cause: str, p_closure: float, p_high: float, dur: float) -> dict:
-    tier, score = _severity(p_closure, p_high, dur)
+    tier, score = _severity(p_closure, dur, cause)
 
     base = {"Low": 1, "Moderate": 2, "High": 4, "Critical": 7}[tier]
-    officers = base + (2 if p_high > 0.6 else 0) + (2 if (dur or 0) > 180 else 0)
+    # extra officers for genuine closure risk and long expected clearance (not corridor flag)
+    officers = base + (2 if p_closure > 0.4 else 0) + (2 if (dur or 0) > 180 else 0)
 
     needs_barricade = (p_closure > 0.35) or (tier in ("High", "Critical") and cause in _BARRICADE_CAUSES)
     barricades = 0

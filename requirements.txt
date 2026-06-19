@@ -1,0 +1,9 @@
+# Runtime dependencies for the dashboard (app.py) + model bundle build.
+# The production models use scikit-learn's HistGradientBoosting (no OpenMP / no system
+# libs needed), so lightgbm/xgboost/lifelines are NOT required to host the app — see
+# requirements-dev.txt for those (offline training / experiments / figures only).
+streamlit>=1.40
+pydeck>=0.9
+scikit-learn>=1.4
+pandas>=2.1
+numpy>=1.26
