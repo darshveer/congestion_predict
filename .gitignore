@@ -28,7 +28,8 @@ nohup.out
 *.log
 logs/
 models/
-results.json
 experiment_results.json
+# results.json is intentionally COMMITTED — the dashboard reads the held-out metrics
+# from it (they are only produced by train.py, which doesn't run on the deploy host).
 
 # Note: figures/ is intentionally committed so the README renders its images on GitHub.

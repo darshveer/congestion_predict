@@ -87,18 +87,26 @@ if page == "📊 Overview":
     st.markdown("Forecast the traffic impact of planned & unplanned events and turn it "
                 "into **manpower / barricading / diversion** plans.")
 
+    if not metrics:
+        st.warning("Held-out metrics (`results.json`) not found on this host — run "
+                   "`python train.py` to generate them. Showing the rest of the dashboard.")
     rc = metrics.get("road_closure", {})
     du = metrics.get("duration", {})
     ho = metrics.get("hotspot", {})
     sv = metrics.get("survival", {})
+
+    def fmt(d, key, spec, scale=1.0, prefix="", suffix=""):
+        v = d.get(key)
+        return f"{prefix}{v*scale:{spec}}{suffix}" if v is not None else "—"
+
     c1, c2, c3, c4 = st.columns(4)
-    metric_card(c1, "Road-closure AUC", f"{rc.get('auc', float('nan')):.3f}",
+    metric_card(c1, "Road-closure AUC", fmt(rc, "auc", ".3f"),
                 "Ranking quality (0.5=chance, 1.0=perfect). Drives barricading/diversion.")
-    metric_card(c2, "Clearance error (median)", f"±{du.get('median_ae_min', float('nan')):.0f} min",
+    metric_card(c2, "Clearance error (median)", fmt(du, "median_ae_min", ".0f", prefix="±", suffix=" min"),
                 f"Mean ±{du.get('mae_min', 0):.0f} min · naive baseline ±{du.get('naive_mae_min', 0):.0f}")
-    metric_card(c3, "Hotspot skill", f"{ho.get('skill_vs_seasonal_naive', 0)*100:+.1f}%",
+    metric_card(c3, "Hotspot skill", fmt(ho, "skill_vs_seasonal_naive", "+.1f", scale=100, suffix="%"),
                 "Improvement over a 'same hour last week' forecast.")
-    metric_card(c4, "Survival concordance", f"{sv.get('aft_concordance', float('nan')):.3f}",
+    metric_card(c4, "Survival concordance", fmt(sv, "aft_concordance", ".3f"),
                 f"Clearance-time ranking (beats plain model's {sv.get('gbm_concordance', 0):.3f}).")
 
     st.markdown("---")
