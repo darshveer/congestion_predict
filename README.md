@@ -1,16 +1,17 @@
-# Event-Driven Congestion Prediction (Bengaluru / ASTraM)
+# MITRA — Model-driven Insights for Traffic & Routing Assistance
+
+*Mitra* means **friend** — a traffic-management assistant for field officers that pushes
+proactive bottleneck warnings and diversion suggestions.
 
 Forecast the **traffic impact of planned & unplanned events** (rallies, festivals,
 breakdowns, accidents, construction, water-logging, VIP movement, …) and turn each
 forecast into a concrete **manpower / barricading / diversion** plan.
 
-**Dataset provenance.** The data is the **ASTraM** event log — *Actionable Intelligence
-for Sustainable Traffic Management*, the AI platform run by the **Bengaluru Traffic
-Police** (with Arcadis) — distributed for the **Gridlock Hackathon 2.0** (Flipkart × BTP).
-It is **8,057 cleaned incidents, Nov 2023 – Apr 2024** (22 corridors, 10 zones, 294
-junctions). It is a **point-event log**, not a sensor/speed grid, so the modelling uses
-the methods that actually fit that data (gradient boosting + point-pattern / areal-count
-statistics + survival analysis), not road-graph deep learning.
+**Dataset.** An anonymised **Bengaluru Traffic Police traffic-event log** of
+**8,057 cleaned incidents, Nov 2023 – Apr 2024** (22 corridors, 10 zones, 294 junctions).
+It is a **point-event log**, not a sensor/speed grid, so the modelling uses the methods
+that actually fit that data (gradient boosting + point-pattern / areal-count statistics +
+survival analysis), not road-graph deep learning.
 
 ---
 
@@ -42,16 +43,16 @@ streamlit run app.py         # opens http://localhost:8501
 
 Four pages:
 
-- **📊 Overview** — live metric cards (road-closure AUC, clearance error, hotspot skill,
+- **Overview** — live metric cards (road-closure AUC, clearance error, hotspot skill,
   survival concordance) read straight from `results.json`, plus the top forecast corridors.
-- **🗺️ Hotspot Map** — a pydeck map of Bengaluru with a **heatmap of where incidents
+- **Hotspot Map** — a pydeck map of Bengaluru with a **heatmap of where incidents
   cluster**, red markers for past road closures, and 3-D **columns per corridor sized by
   predicted event load** (taller/redder = busier). Filter by cause; hover for values.
-- **🎯 Score an Event** — pick a cause, corridor, vehicle, time and location → get the
+- **Score an Event** — pick a cause, corridor, vehicle, time and location → get the
   **road-closure risk, expected clearance time, severity tier**, and a concrete
   **deployment plan** (officers / barricades / diversion / tow), shown on a map with the
   surrounding corridor hotspots.
-- **📈 Model & Analysis** — the full metrics table (held-out test set) and all analysis
+- **Model & Analysis** — the full metrics table (held-out test set) and all analysis
   figures.
 
 Every prediction made in the UI is written to the run log (see *Logging* below).
@@ -79,13 +80,13 @@ and it builds and hosts automatically.
 **Option C — Docker → any cloud (production: custom domain, scaling)**
 A `Dockerfile` is included (pre-trains the bundle into the image for fast cold starts):
 ```bash
-docker build -t astram-congestion .
-docker run -p 8501:8501 astram-congestion        # http://localhost:8501
+docker build -t mitra-congestion .
+docker run -p 8501:8501 mitra-congestion        # http://localhost:8501
 ```
 Push that image to **Google Cloud Run, Render, Railway, Fly.io, AWS App Runner**, etc.
 The container respects the platform's `$PORT`. Cloud Run example:
 ```bash
-gcloud run deploy astram-congestion --source . --region asia-south1 --allow-unauthenticated
+gcloud run deploy mitra-congestion --source . --region asia-south1 --allow-unauthenticated
 ```
 
 (Self-hosting on your own Ubuntu box also works: `pip install -r requirements.txt &&
@@ -188,7 +189,7 @@ Final out-of-time road-closure AUC improved **0.787 → 0.812** from this proces
 | Residual Moran's I diagnostic (2026-01-13) | evaluation | **Kept** (indicative: 22<30 units) |
 | KDE/density on the **closure** classifier | — | **Rejected by ablation** (hurts AUC) |
 
-## Methods from researching the dataset's domain (BTP-ASTraM / incident-log literature)
+## Methods from researching the dataset's domain (Bengaluru Traffic Police / incident-log literature)
 
 - **Survival analysis (Weibull AFT)** for clearance time — the strongest *new* idea: it
   uses the **706 still-active (right-censored) events** the regressor ignores and ranks

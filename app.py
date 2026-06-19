@@ -1,4 +1,7 @@
-"""ASTraM Event-Congestion dashboard (Streamlit + pydeck map).
+"""MITRA — Model-driven Insights for Traffic & Routing Assistance.
+
+A traffic-management assistant dashboard (Streamlit + pydeck map): proactive bottleneck
+warnings, event-impact predictions, and diversion suggestions for field officers.
 
 Run:  streamlit run app.py
 The app loads models/app_bundle.pkl (auto-builds it if missing).
@@ -22,8 +25,7 @@ BUNDLE = "models/app_bundle.pkl"
 DATA_FILE = D.DATA_FILE
 CENTER = [12.9716, 77.5946]
 
-st.set_page_config(page_title="ASTraM Congestion Intelligence", page_icon="🚦",
-                   layout="wide")
+st.set_page_config(page_title="MITRA — Traffic & Routing Assistance", layout="wide")
 
 
 # ----------------------------- data loading -----------------------------
@@ -66,12 +68,14 @@ impact = bundle["impact"]
 opt = bundle["options"]
 
 # ----------------------------- sidebar nav ------------------------------
-st.sidebar.title("🚦 ASTraM Congestion Intelligence")
-st.sidebar.caption(f"Bengaluru Traffic Police event data · "
+st.sidebar.title("MITRA")
+st.sidebar.caption("Model-driven Insights for Traffic & Routing Assistance — "
+                   "your traffic-management assistant")
+st.sidebar.caption(f"Bengaluru traffic-event data · "
                    f"{bundle['meta']['date_min']} → {bundle['meta']['date_max']} · "
                    f"{bundle['meta']['n_events']:,} events")
-page = st.sidebar.radio("View", ["📊 Overview", "🗺️ Hotspot Map",
-                                 "🎯 Score an Event", "📈 Model & Analysis"])
+page = st.sidebar.radio("View", ["Overview", "Hotspot Map",
+                                 "Score an Event", "Model & Analysis"])
 st.sidebar.markdown("---")
 st.sidebar.caption("Models trained on the full history. Re-run `python build_app_data.py` "
                    "after retraining to refresh.")
@@ -82,8 +86,8 @@ def metric_card(col, label, value, help_=None):
 
 
 # ============================== OVERVIEW ================================
-if page == "📊 Overview":
-    st.title("Event-Driven Congestion — Operational Intelligence")
+if page == "Overview":
+    st.title("MITRA — Event-Driven Congestion Intelligence")
     st.markdown("Forecast the traffic impact of planned & unplanned events and turn it "
                 "into **manpower / barricading / diversion** plans.")
 
@@ -133,8 +137,8 @@ if page == "📊 Overview":
 
 
 # ============================== HOTSPOT MAP ============================
-elif page == "🗺️ Hotspot Map":
-    st.title("🗺️ Predicted Event Hotspots — Bengaluru")
+elif page == "Hotspot Map":
+    st.title("Predicted Event Hotspots — Bengaluru")
     ev = bundle["events_sample"].copy()
     cf = bundle["corridor_forecast"].copy()
 
@@ -189,8 +193,8 @@ elif page == "🗺️ Hotspot Map":
 
 
 # ============================== SCORE EVENT ===========================
-elif page == "🎯 Score an Event":
-    st.title("🎯 Score an Event → Deployment Plan")
+elif page == "Score an Event":
+    st.title("Score an Event — Deployment Plan")
     st.caption("Enter a (planned or reported) event and get its predicted impact and a "
                "recommended manpower / barricading / diversion plan.")
 
@@ -220,7 +224,7 @@ elif page == "🎯 Score an Event":
     lat = cla.number_input("Latitude", value=float(lat), format="%.5f")
     lon = clo.number_input("Longitude", value=float(lon), format="%.5f")
 
-    if st.button("🚀 Predict & recommend", type="primary"):
+    if st.button("Predict & recommend", type="primary"):
         # IST hour -> UTC for the raw timestamp the cleaner expects
         ts = pd.Timestamp(date) + pd.Timedelta(hours=hour) - pd.Timedelta(hours=5, minutes=30)
         inp = {"event_type": etype, "event_cause": cause, "corridor": corridor,
@@ -238,13 +242,12 @@ elif page == "🎯 Score an Event":
         m3.metric("Severity", rec["severity_tier"])
         m4.metric("Major-road event", "Yes" if p["p_high_priority"] > 0.5 else "No")
 
-        tier_color = {"Critical": "🔴", "High": "🟠", "Moderate": "🟡", "Low": "🟢"}
-        st.markdown(f"### {tier_color.get(rec['severity_tier'],'⚪')} Deployment plan — "
-                    f"**{rec['severity_tier']}** (score {rec['severity_score']})")
+        st.markdown(f"### Deployment plan — **{rec['severity_tier']}** "
+                    f"(score {rec['severity_score']})")
         d1, d2, d3 = st.columns(3)
-        d1.metric("👮 Officers", int(rec["rec_officers"]))
-        d2.metric("🚧 Barricades", int(rec["rec_barricades"]))
-        d3.metric("🚛 Tow crane", "Yes" if rec["rec_tow_crane"] else "No")
+        d1.metric("Officers", int(rec["rec_officers"]))
+        d2.metric("Barricades", int(rec["rec_barricades"]))
+        d3.metric("Tow crane", "Yes" if rec["rec_tow_crane"] else "No")
         st.info(f"**Traffic management:** {rec['rec_diversion']}")
 
         # map: the event + nearby corridor hotspots
@@ -265,8 +268,8 @@ elif page == "🎯 Score an Event":
 
 
 # ============================== ANALYSIS ==============================
-elif page == "📈 Model & Analysis":
-    st.title("📈 Model Performance & Data Analysis")
+elif page == "Model & Analysis":
+    st.title("Model Performance & Data Analysis")
 
     st.subheader("Metrics (held-out future test set)")
     rows = []

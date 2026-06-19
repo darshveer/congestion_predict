@@ -1,4 +1,4 @@
-"""Load and clean the raw Astram event log into a tidy, analysis-ready frame."""
+"""Load and clean the raw traffic-event log into a tidy, analysis-ready frame."""
 import numpy as np
 import pandas as pd
 

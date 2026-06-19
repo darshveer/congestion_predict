@@ -1,7 +1,7 @@
 import pandas as pd, numpy as np
 pd.set_option('display.width', 200); pd.set_option('display.max_columns', 60)
 
-f = "Astram event data_anonymized - Astram event data_anonymizedb40ac87.csv"
+f = "traffic_events_anonymized.csv"
 df = pd.read_csv(f, low_memory=False)
 print("SHAPE:", df.shape)
 print("\nCOLUMNS:", list(df.columns))

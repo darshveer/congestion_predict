@@ -1,7 +1,8 @@
-# The Solution, Explained Simply
+# MITRA — The Solution, Explained Simply
 
-*A plain-language walkthrough of what I built, how it answers each part of the
-problem, what I tried before, and how accurate it is. No ML background needed.*
+*MITRA (Model-driven Insights for Traffic & Routing Assistance) — "mitra" means friend.
+A plain-language walkthrough of what I built, how it answers each part of the problem,
+what I tried before, and how accurate it is. No ML background needed.*
 
 ---
 
@@ -14,8 +15,8 @@ gut/experience, and don't have a system that learns from past events. The challe
 **use historical data to (a) predict an event's traffic impact in advance, and
 (b) recommend how much manpower, barricading, and diversion to deploy.**
 
-I was given the **ASTraM** dataset — a log of **8,057 real traffic incidents** reported
-by Bengaluru Traffic Police between November 2023 and April 2024. Each row is one event
+I was given an anonymised **Bengaluru Traffic Police** dataset — a log of **8,057 real
+traffic incidents** reported between November 2023 and April 2024. Each row is one event
 with its location, time, cause, the road/corridor, whether it needed a road closure, and
 (sometimes) how long it took to clear.
 
