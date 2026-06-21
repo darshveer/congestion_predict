@@ -13,6 +13,7 @@ import sys
 
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 import pydeck as pdk
 import streamlit as st
 
@@ -67,6 +68,41 @@ bundle = load_bundle()
 metrics = load_metrics()
 impact = bundle["impact"]
 opt = bundle["options"]
+
+def save_event_map(lat, lon, corridor=None, filename="event_map.png"):
+    plt.figure(figsize=(6, 4))
+
+    plt.scatter(
+        lon,
+        lat,
+        s=300,
+        marker="*"
+    )
+
+    plt.xlabel("Longitude")
+    plt.ylabel("Latitude")
+
+    title = "Event Location"
+
+    if corridor:
+        title += f" - {corridor}"
+
+    plt.title(title)
+
+    plt.grid(True)
+
+    plt.tight_layout()
+
+    plt.savefig(
+        filename,
+        dpi=300,
+        bbox_inches="tight"
+    )
+
+    plt.close()
+
+    return filename
+
 
 # ----------------------------- sidebar nav ------------------------------
 st.sidebar.title("MITRA")
@@ -249,6 +285,11 @@ elif page == "Score an Event":
         d2.metric("Barricades", int(rec["rec_barricades"]))
         d3.metric("Tow crane", "Yes" if rec["rec_tow_crane"] else "No")
         st.info(f"**Traffic management:** {rec['rec_diversion']}")
+        map_file = save_event_map(
+            lat=lat,
+            lon=lon,
+            corridor=corridor
+        )
 
         pdf_file = generate_incident_report(
             event_type=cause,
@@ -258,6 +299,7 @@ elif page == "Score an Event":
             officers=int(rec["rec_officers"]),
             barricades=int(rec["rec_barricades"]),
             diversion=rec["rec_diversion"],
+            map_path=map_file
         )
 
         with open(pdf_file, "rb") as f:

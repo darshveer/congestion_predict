@@ -48,3 +48,6 @@ logs/
 
 # Local datasets
 traffic_events_anonymized1.csv
+
+event_map.png
+MITRA_Incident_Report.pdf
