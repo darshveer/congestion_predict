@@ -70,37 +70,34 @@ impact = bundle["impact"]
 opt = bundle["options"]
 
 def save_event_map(lat, lon, corridor=None, filename="event_map.png"):
-    plt.figure(figsize=(6, 4))
+    """Render an OSM street map centred on the event, with a red marker."""
+    try:
+        from staticmap import StaticMap, CircleMarker
 
-    plt.scatter(
-        lon,
-        lat,
-        s=300,
-        marker="*"
-    )
+        m = StaticMap(800, 520, url_template=(
+            "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+        ))
+        marker = CircleMarker((lon, lat), color="red", width=14)
+        m.add_marker(marker)
+        image = m.render(zoom=14)
+        image.save(filename)
+        return filename
+    except Exception:
+        pass  # offline / library issue → matplotlib fallback
 
+    # ── matplotlib fallback (no internet / staticmap unavailable) ──
+    plt.figure(figsize=(8, 5))
+    plt.scatter(lon, lat, s=400, marker="*", color="#dc2626", zorder=5)
     plt.xlabel("Longitude")
     plt.ylabel("Latitude")
-
     title = "Event Location"
-
     if corridor:
-        title += f" - {corridor}"
-
+        title += f" — {corridor}"
     plt.title(title)
-
-    plt.grid(True)
-
+    plt.grid(True, alpha=0.3)
     plt.tight_layout()
-
-    plt.savefig(
-        filename,
-        dpi=300,
-        bbox_inches="tight"
-    )
-
+    plt.savefig(filename, dpi=200, bbox_inches="tight")
     plt.close()
-
     return filename
 
 
