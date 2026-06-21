@@ -16,6 +16,7 @@ import pandas as pd
 import pydeck as pdk
 import streamlit as st
 
+from pdf_utils import generate_incident_report
 from congestion import data as D
 from congestion import recommend as R
 from congestion.logging_utils import get_logger
@@ -182,8 +183,7 @@ elif page == "Hotspot Map":
         layers=layers,
         initial_view_state=pdk.ViewState(latitude=CENTER[0], longitude=CENTER[1],
                                          zoom=10.4, pitch=45),
-        map_provider="carto", map_style="light", tooltip=tooltip),
-        width="stretch", height=560)
+        map_provider="carto", map_style="light", tooltip=tooltip))
 
     st.subheader("Corridor forecast table")
     show = cf[["corridor", "pred_events", "pred_impact", "actual_events"]].copy()
@@ -250,6 +250,23 @@ elif page == "Score an Event":
         d3.metric("Tow crane", "Yes" if rec["rec_tow_crane"] else "No")
         st.info(f"**Traffic management:** {rec['rec_diversion']}")
 
+        pdf_file = generate_incident_report(
+            event_type=cause,
+            closure_risk=f"{p['p_road_closure']*100:.0f}%",
+            duration=f"{p['exp_duration_min']:.0f} mins",
+            severity=rec["severity_tier"],
+            officers=int(rec["rec_officers"]),
+            barricades=int(rec["rec_barricades"]),
+            diversion=rec["rec_diversion"],
+        )
+
+        with open(pdf_file, "rb") as f:
+            st.download_button(
+                label="📄 Download Incident Report",
+                data=f,
+                file_name="MITRA_Incident_Report.pdf",
+                mime="application/pdf"
+            )
         # map: the event + nearby corridor hotspots
         pt = pd.DataFrame([{"latitude": lat, "longitude": lon}])
         st.pydeck_chart(pdk.Deck(
@@ -263,9 +280,8 @@ elif page == "Score an Event":
                           get_fill_color="[216, 30, 30, 220]", get_radius=300)],
             initial_view_state=pdk.ViewState(latitude=lat, longitude=lon, zoom=12,
                                              pitch=45),
-            map_provider="carto", map_style="light"),
-            width="stretch", height=420)
-
+            map_provider="carto", map_style="light"))
+    
 
 # ============================== ANALYSIS ==============================
 elif page == "Model & Analysis":

@@ -1,12 +1,12 @@
 {
   "road_closure": {
-    "auc": 0.8122,
-    "pr_auc": 0.285,
-    "brier": 0.059,
-    "precision": 0.3122,
-    "recall": 0.5086,
-    "f1": 0.3869,
-    "threshold": 0.1805,
+    "auc": 0.8106,
+    "pr_auc": 0.2933,
+    "brier": 0.0587,
+    "precision": 0.3313,
+    "recall": 0.4655,
+    "f1": 0.3871,
+    "threshold": 0.207,
     "positive_rate": 0.072
   },
   "high_priority": {
@@ -14,41 +14,36 @@
     "pr_auc": 0.9999,
     "brier": 0.0006,
     "precision": 1.0,
-    "recall": 0.8794,
-    "f1": 0.9358,
+    "recall": 0.8784,
+    "f1": 0.9352,
     "threshold": 0.9998,
     "positive_rate": 0.6222
   },
   "duration": {
-    "mae_min": 95.2,
+    "mae_min": 94.3,
     "median_ae_min": 31.6,
     "naive_mae_min": 107.5,
     "n_test": 544
   },
-  "survival": {
-    "aft_concordance": 0.7151,
-    "gbm_concordance": 0.6919,
-    "censored_train_events": 706
-  },
   "closure_drivers": {
-    "event_cause": 0.1852,
-    "corridor": 0.0469,
-    "dist_center_km": 0.029,
-    "desc_len": 0.0212,
-    "veh_type": 0.0142,
-    "lon": 0.0065,
-    "lat": 0.005,
-    "authenticated": 0.001
+    "event_cause": 0.1891,
+    "corridor": 0.0417,
+    "dist_center_km": 0.0305,
+    "desc_len": 0.0199,
+    "veh_type": 0.013,
+    "lon": 0.0082,
+    "lat": 0.0073,
+    "authenticated": 0.0004
   },
   "hotspot": {
-    "event_mae_per_bin": 0.1626,
+    "event_mae_per_bin": 0.1625,
     "corridor_mean_mae": 0.192,
     "seasonal_naive_mae": 0.1814,
-    "skill_vs_seasonal_naive": 0.1038,
-    "pred_actual_corr": 0.468,
-    "cv_mae_mean": 0.1465,
+    "skill_vs_seasonal_naive": 0.1042,
+    "pred_actual_corr": 0.4718,
+    "cv_mae_mean": 0.1468,
     "cv_mae_std": 0.0183,
-    "residual_morans_i": 0.0976,
+    "residual_morans_i": -0.0186,
     "n_test_bins": 13068
   },
   "_meta": {
@@ -56,6 +51,6 @@
     "n_train": 6445,
     "n_test": 1612,
     "split_at": "2024-03-15 04:48:13.396599808+05:30",
-    "trained_at": "2026-06-19T15:04:44"
+    "trained_at": "2026-06-21T10:58:15"
   }
 }

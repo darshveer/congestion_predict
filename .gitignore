@@ -33,3 +33,18 @@ experiment_results.json
 # from it (they are only produced by train.py, which doesn't run on the deploy host).
 
 # Note: figures/ is intentionally committed so the README renders its images on GitHub.
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environment
+.venv/
+
+# Logs
+logs/
+
+# Generated PDFs
+*.pdf
+
+# Local datasets
+traffic_events_anonymized1.csv

@@ -6,3 +6,4 @@ matplotlib>=3.7
 lifelines>=0.27
 lightgbm>=4.0   # needs OpenMP at runtime: `brew install libomp` (mac) / `libgomp1` (Debian)
 xgboost>=2.0
+reportlab>=4.0.0
